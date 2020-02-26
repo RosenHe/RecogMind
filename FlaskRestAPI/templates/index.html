@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+  <head>    
+    <style>
+        div {
+          width: 640px;
+          border: 15px solid MistyRose;
+          padding: 50px;
+          margin: 20px;
+          margin-left: auto;
+  		  margin-right: auto;
+          text-align: center;
+        }
+        body {
+          text-align: center;
+          background-color: lightblue;
+        }
+        
+        h1 {
+          color: white;
+          text-align: center;
+          font-family: "Courier New", Times, Monospace;
+        }
+        <p style = "font-family:courier,arial,helvetica;">
+Write your text here
+</p>
+        p {
+          font-family: verdana;
+          font-size: 20px;
+          color: PaleVioletRed
+        }
+        </style>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+        </head>
+        <body>
+            <img src="../staticFiles/RecogMind_logo.png" alt="RecogMind logo">
+            <h1>How are you feeling today?</h1>
+            <div>
+              <video id="video" width="640" height="480" autoplay></video>
+              <canvas id="canvas" width="640" height="480" hidden></canvas>
+            </div>
+            </body>
+	    <button id="MusicButton" type="button" class="requestButton">Music</button>
+
+    <button id="QuotesButton" type="button" class="requestButton">Quotes</button>
+
+    <button id="VideoButton" type="button" class="requestButton">Video</button>
+    <button id="ArticlesButton" type="button" class="requestButton">Articles</button>
+
+  </body>
+</html>
+
+<script>
+$( document ).ready(function() {
+  var api_url = 'http://127.0.0.1:5000'
+  if (hasGetUserMedia()) {
+    console.log("video good to go");
+    if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      // Not adding `{ audio: true }` since we only want video now
+      navigator.mediaDevices.getUserMedia({ video: true }).then(function(stream) {
+          //video.src = window.URL.createObjectURL(stream);
+          video.srcObject = stream;
+          video.play();
+      });
+    }
+  } else {
+    alert('getUserMedia() is not supported by your browser');
+  }
+
+  var canvas = document.getElementById('canvas');
+  var context = canvas.getContext('2d');
+  var video = document.getElementById('video');
+
+  $( ".requestButton" ).click(function() {
+    var currButtonId = this.id;
+    var category = $("#" + currButtonId).text();
+
+    context.drawImage(video, 0, 0, 640, 480);
+    var dataUrl = $("#canvas")[0].toDataURL("image/png");
+    var _data = {"image": dataUrl};
+    $.ajax({
+        url: api_url + '/getEmotionsData',
+        type: 'post',
+        contentType: "application/json; charset=utf-8",
+	      dataType: "json",
+        data: JSON.stringify( _data ),
+        success: function(result){
+            console.log(result.data);
+            var emotion = result.data["emotion"];
+            console.log(emotion)
+            console.log(result.data[emotion]);
+            var targetRedirectUrl = result.data[emotion][category];
+            console.log(targetRedirectUrl);
+            alert("your emotion category is:" + emotion)
+            window.location.href = targetRedirectUrl;
+        }
+    })
+  });
+});
+
+function hasGetUserMedia() {
+  return !!(navigator.mediaDevices &&
+    navigator.mediaDevices.getUserMedia);
+}
+
+// Converts canvas to an image
+function convertCanvasToImage() {
+	var image = new Image();
+	image.src = canvas.toDataURL("image/png");
+	return image;
+}
+</script>
+
